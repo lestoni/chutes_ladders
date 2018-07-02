@@ -11,8 +11,9 @@ module.exports =  class Player {
   }
 
   // Roll Dice to a value
-  rollDice() {
-    this.dice = Math.ceil(Math.random() * (1 - 6) + 6);
+  // inject dice num to enforce a dice value
+  rollDice(num) {
+    this.dice = num ? num : Math.ceil(Math.random() * (1 - 6) + 6);
     this.counter++;
     return this.dice
   }

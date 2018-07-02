@@ -20,10 +20,9 @@ let currentBoard = {
   chutes: [],
   ladders: []
 };
+
 let newBoard = true;
 let boards = [];
-let solved = 0;
-let moves  = 0;
 
 lineReader.on('line', (line)=> {
   // If Empty Beginning of a new board data
@@ -70,76 +69,80 @@ lineReader.on('line', (line)=> {
   }
 });
 
+
+// Lets work with two players for now
+let player = new Player('John');
+
+let stats = {
+  solved: 0,
+  moves: 0,
+  minimum_moves: 0
+};
+
 lineReader.on('close', () => {
-  // Lets work with two players for now
-  let John = new Player('John');
-  let Jane = new Player('Jane');
 
   for(let board of boards) {
     board = new Board(board);
+    averageMoves(board);
 
-    let newGame = true;
-    let currentPlayer;
-    let verdict;
-
-    try {
-      while(!board.isSolved) {
-        if (newGame) {
-          let firstPlayer = firstRoll();
-
-          if(firstPlayer.name == 'John') {
-            currentPlayer = John;
-            verdict = board.moveCounter(firstPlayer.dice)
-          } else if(firstPlayer.name == 'Jane') {
-            currentPlayer = Jane;
-            verdict = board.moveCounter(firstPlayer.dice)
-          }
-
-          newGame = false;
-        } else {
-          if (verdict.playAgain) {
-            verdict = board.moveCounter(currentPlayer.rollDice())
-          } else if (verdict.nextPlayer) {
-            currentPlayer = currentPlayer.name == 'Jane'? John : Jane;
-            verdict = board.moveCounter(currentPlayer.rollDice())
-          }
-        }
-
-        if(verdict.isSolved) {
-          solved++;
-          moves += (John.counter + Jane.counter);
-          //console.log(currentPlayer.name, ' Won!!', board.currentTile, board.finish);
-          John.counter = 0;
-          Jane.counter = 0;
-        }
-      }
-    } catch (e) {
-      // for any uncaught exception
-      console.log(e.message)
-    }
   }
 
-  // let Players roll dice until one of the has a higher number than the other
-  function firstRoll() {
-    let JohnRoll = John.rollDice();
-    let JaneRoll = Jane.rollDice();
-
-    if(JohnRoll > JaneRoll) {
-      return John;
-    } else if (JohnRoll < JaneRoll) {
-      return Jane;
-    } else {
-      return firstRoll()
-    }
+  for(let board of boards) {
+    board = new Board(board);
+    minimumMoves(board);
   }
 
   // Stats
   console.log('Boards Count: ', boards.length);
-  console.log('Solved Boards Count: ', solved);
-  console.log('Average Moves Per Board: ', moves / solved)
+  console.log('Solved Boards Count: ', stats.solved);
+  console.log('Average Moves Per Board: ', stats.moves / stats.solved)
+  console.log('Minimum Moves Per Board: ', stats.minimum_moves / stats.solved)
 
   // clean exit
   process.exit(0)
-
-
 })
+
+function minimumMoves(board) {
+  let verdict;
+
+  try {
+    while(!board.isSolved) {
+      let diff = (board.finish - board.currentTile);
+      let dice = diff < 6 ? diff : player.rollDice(6);
+
+      verdict = board.moveCounter(dice)
+
+      if(verdict.isSolved) {
+        stats.minimum_moves += player.counter;
+        player.counter = 0;
+      }
+
+
+    }
+  } catch (e) {
+    // for any uncaught exception
+    console.log(e.message)
+  }
+}
+
+// calculate Average Moves
+function averageMoves(board) {
+  let verdict;
+
+  try {
+    while(!board.isSolved) {
+      let dice = player.rollDice();
+
+      verdict = board.moveCounter(dice)
+
+      if(verdict.isSolved) {
+        stats.solved++;
+        stats.moves += player.counter;
+        player.counter = 0;
+      }
+    }
+  } catch (e) {
+    // for any uncaught exception
+    console.log(e.message)
+  }
+}
